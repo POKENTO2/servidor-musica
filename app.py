@@ -4,23 +4,17 @@ import yt_dlp
 
 app = Flask(__name__)
 
-@app.route('/api/search', methods=['GET'])
-def search_and_extract():
-    query = request.args.get('q', '')
-    if not query:
-        return jsonify([])
-
+def obtener_resultados(busqueda):
     ydl_opts = {
         'format': 'bestaudio/best',
         'noplaylist': True,
         'quiet': True,
         'default_search': 'ytsearch5',
     }
-
     results = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
-            info = ydl.extract_info(f"ytsearch5:{query}", download=False)
+            info = ydl.extract_info(f"ytsearch5:{busqueda}", download=False)
             if 'entries' in info:
                 for entry in info['entries']:
                     results.append({
@@ -31,14 +25,20 @@ def search_and_extract():
                         'album': 'Sencillo'
                     })
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            print(f"Error en yt_dlp: {e}")
+    return results
 
-    return jsonify(results)
+@app.route('/api/search', methods=['GET'])
+def search_and_extract():
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify([])
+    return jsonify(obtener_resultados(query))
 
 @app.route('/api/popular', methods=['GET'])
 def popular():
-    # Búsqueda inicial por defecto
-    return search_and_extract()
+    # Búsqueda por defecto para que no devuelva lista vacía
+    return jsonify(obtener_resultados("musica popular 2026"))
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
